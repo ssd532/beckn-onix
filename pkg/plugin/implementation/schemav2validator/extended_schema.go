@@ -345,9 +345,35 @@ func isAllowedDomain(schemaURL string, allowedDomains []string) bool {
 	if len(allowedDomains) == 0 {
 		return true // No whitelist = all allowed
 	}
+
+	// Parse the URL to check scheme and host
+	u, err := url.Parse(schemaURL)
+	if err != nil {
+		// If parsing fails, treat as a local file path - always allowed
+		return true
+	}
+
+	// Non-HTTP(S) URLs (file://, local paths) are always allowed
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return true
+	}
+
+	host := u.Hostname()
+	if host == "" {
+		return false
+	}
+
 	for _, domain := range allowedDomains {
-		if strings.Contains(schemaURL, domain) {
+		// Exact host match
+		if host == domain {
 			return true
+		}
+		// Subdomain wildcard: domain starting with '.' matches any subdomain
+		if strings.HasPrefix(domain, ".") {
+			suffix := domain[1:]
+			if host == suffix || strings.HasSuffix(host, "."+suffix) {
+				return true
+			}
 		}
 	}
 	return false

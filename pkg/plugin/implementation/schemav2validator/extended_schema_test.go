@@ -403,9 +403,68 @@ func TestIsAllowedDomain(t *testing.T) {
 			want:           false,
 		},
 		{
-			name:           "partial domain match",
-			schemaURL:      "https://raw.githubusercontent.com/beckn/schema.yaml",
-			allowedDomains: []string{"githubusercontent.com"},
+			name:           "substring match blocked - should not allow myexample.com",
+			schemaURL:      "https://myexample.com/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           false,
+		},
+		{
+			name:           "substring match blocked - should not allow evilexample.com",
+			schemaURL:      "https://evilexample.com/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isAllowedDomain(tt.schemaURL, tt.allowedDomains)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestIsAllowedDomain_Security(t *testing.T) {
+	tests := []struct {
+		name           string
+		schemaURL      string
+		allowedDomains []string
+		want           bool
+	}{
+		{
+			name:           "exact domain match",
+			schemaURL:      "https://example.com/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           true,
+		},
+		{
+			name:           "subdomain allowed with leading dot",
+			schemaURL:      "https://api.example.com/schema.yaml",
+			allowedDomains: []string{".example.com"},
+			want:           true,
+		},
+		{
+			name:           "subdomain blocked without leading dot",
+			schemaURL:      "https://api.example.com/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           false,
+		},
+		{
+			name:           "false positive substring match blocked",
+			schemaURL:      "https://myexample.com/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           false,
+		},
+		{
+			name:           "file URL always allowed",
+			schemaURL:      "file:///path/to/schema.yaml",
+			allowedDomains: []string{"example.com"},
+			want:           true,
+		},
+		{
+			name:           "local path always allowed",
+			schemaURL:      "/path/to/schema.yaml",
+			allowedDomains: []string{"example.com"},
 			want:           true,
 		},
 	}
