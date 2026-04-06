@@ -134,6 +134,9 @@ func hashURL(urlStr string) string {
 
 // isValidSchemaPath validates if the schema path is safe to load.
 func isValidSchemaPath(schemaPath string) bool {
+	if strings.TrimSpace(schemaPath) == "" {
+		return false
+	}
 	u, err := url.Parse(schemaPath)
 	if err != nil {
 		// Could be a simple file path

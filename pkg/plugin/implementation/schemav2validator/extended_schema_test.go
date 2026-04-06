@@ -227,7 +227,7 @@ func TestIsValidSchemaPath(t *testing.T) {
 		{
 			name:       "empty path",
 			schemaPath: "",
-			want:       true, // url.Parse("") succeeds, returns empty scheme
+			want:       false, // empty path should be invalid
 		},
 	}
 
