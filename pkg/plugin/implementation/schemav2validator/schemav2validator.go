@@ -381,13 +381,11 @@ func (v *schemav2Validator) extractActionFromSchema(schema *openapi3.Schema) str
 		}
 	}
 
-	// Check allOf at schema level
+	// Recursively check allOf branches to handle deeply nested context
 	for _, allOfSchema := range schema.AllOf {
 		if allOfSchema.Value != nil {
-			if ctxProp := allOfSchema.Value.Properties["context"]; ctxProp != nil && ctxProp.Value != nil {
-				if action := v.getActionValue(ctxProp.Value); action != "" {
-					return action
-				}
+			if action := v.extractActionFromSchema(allOfSchema.Value); action != "" {
+				return action
 			}
 		}
 	}

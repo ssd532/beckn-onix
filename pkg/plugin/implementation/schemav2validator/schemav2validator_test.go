@@ -315,6 +315,53 @@ func TestValidate_EdgeCases(t *testing.T) {
 	}
 }
 
+
+func TestValidate_DeepAllOfActionExtraction(t *testing.T) {
+	const testSpecDeepAllOf = `openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /search:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [context, message]
+              allOf:
+                - type: object
+                  allOf:
+                    - type: object
+                      properties:
+                        context:
+                          type: object
+                          required: [action]
+                          properties:
+                            action:
+                              const: search
+                        message:
+                          type: object
+`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(testSpecDeepAllOf))
+	}))
+	defer server.Close()
+
+	validator, _, err := New(context.Background(), &Config{Type: "url", Location: server.URL, CacheTTL: 3600})
+	if err != nil {
+		t.Fatalf("Failed to create validator: %v", err)
+	}
+
+	payload := `{"context":{"action":"search"},"message":{}}`
+	err = validator.Validate(context.Background(), nil, []byte(payload))
+	if err != nil {
+		t.Fatalf("Validation failed for deep allOf action extraction: %v", err)
+	}
+}
+
 func contains(s, substr string) bool {
 	if len(substr) == 0 {
 		return true
