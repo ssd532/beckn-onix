@@ -22,16 +22,16 @@ Overall progress: **0/4 issues fixed**
 
 ## Issue 4: No timeout for initial OpenAPI spec URL load
 
-**Status**: ⬜ Not started  
+**Status**: ✅ Completed  
 **File**: `pkg/plugin/implementation/schemav2validator/schemav2validator.go`
 
 ### Tasks
-- [ ] Add `LoadTimeout int` field to `Config` struct (default 30)
-- [ ] Add test `TestLoadSpec_URLTimeout()` in `schemav2validator_test.go`
-- [ ] Verify test fails or hangs with current implementation (demonstrates no timeout)
-- [ ] Modify `loadSpec()` to set `loader.Context` with timeout for URL loads
-- [ ] Verify test passes (times out quickly)
-- [ ] Run full test suite to ensure no regressions
+- [x] Add `LoadTimeout int` field to `Config` struct (default 30)
+- [x] Add test `TestLoadSpec_URLTimeout()` in `schemav2validator_test.go`
+- [x] Verify test fails or hangs with current implementation (demonstrates no timeout)
+- [x] Modify `loadSpec()` to set custom `ReadFromURIFunc` with HTTP client timeout for URL loads
+- [x] Verify test passes (times out quickly)
+- [x] Run full test suite to ensure no regressions
 - [ ] Commit with message: "feat: add configurable timeout for spec URL loading"
 
 ---
