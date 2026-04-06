@@ -109,6 +109,8 @@ func (v *schemav2Validator) validateExtendedSchemas(ctx context.Context, body in
 				} else {
 					schemaErrors[i].Paths = obj.Path
 				}
+				// Tag all errors as domain layer
+				schemaErrors[i].Layer = model.LayerDomain
 			}
 
 			return &model.SchemaValidationErr{Errors: schemaErrors}

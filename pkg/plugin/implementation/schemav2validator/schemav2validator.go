@@ -289,6 +289,11 @@ func (v *schemav2Validator) formatValidationError(err error) error {
 		v.extractSchemaErrors(err, &schemaErrors)
 	}
 
+	// Tag all errors as transport layer
+	for i := range schemaErrors {
+		schemaErrors[i].Layer = model.LayerTransport
+	}
+
 	return &model.SchemaValidationErr{Errors: schemaErrors}
 }
 

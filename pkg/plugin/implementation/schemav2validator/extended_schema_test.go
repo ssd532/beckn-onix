@@ -2,12 +2,16 @@ package schemav2validator
 
 import (
 	"context"
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/beckn-one/beckn-onix/pkg/model"
 )
 
 func TestIsCoreSchema(t *testing.T) {
@@ -765,4 +769,97 @@ func TestValidateExtendedSchemas_MissingMessage(t *testing.T) {
 	err := v.validateExtendedSchemas(ctx, body)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "missing 'message' field")
+}
+
+func TestValidateExtendedSchemas_DomainLayer(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create domain attributes schema (OpenAPI 3.1) with a required field
+	attrsPath := filepath.Join(tmpDir, "attributes.yaml")
+	attrsContent := `openapi: 3.1.0
+info:
+  title: Domain
+  version: 1.0.0
+components:
+  schemas:
+    DomainType:
+      type: object
+      required: [requiredField]
+      properties:
+        requiredField:
+          type: string`
+	assert.NoError(t, os.WriteFile(attrsPath, []byte(attrsContent), 0644))
+
+	// Dummy context.jsonld (not used directly, but required for transformation)
+	ctxPath := filepath.Join(tmpDir, "context.jsonld")
+	assert.NoError(t, os.WriteFile(ctxPath, []byte(`{}`), 0644))
+
+	// Minimal transport spec that allows any message content
+	transportPath := filepath.Join(tmpDir, "transport.yaml")
+	transportContent := `openapi: 3.1.0
+info:
+  title: Transport
+  version: 1.0.0
+paths:
+  /test:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [context, message]
+              properties:
+                context:
+                  type: object
+                  required: [action]
+                  properties:
+                    action:
+                      const: test
+                message:
+                  type: object`
+	assert.NoError(t, os.WriteFile(transportPath, []byte(transportContent), 0644))
+
+	// Create validator with extended schema enabled
+	ctx := context.Background()
+	validator, _, err := New(ctx, &Config{
+		Type:                 "file",
+		Location:             transportPath,
+		CacheTTL:             3600,
+		EnableExtendedSchema: true,
+		ExtendedSchemaConfig: ExtendedSchemaConfig{CacheTTL: 86400},
+	})
+	assert.NoError(t, err)
+
+	// Build payload with a domain object that fails validation (missing requiredField)
+	payload := map[string]interface{}{
+		"context": map[string]interface{}{"action": "test"},
+		"message": map[string]interface{}{
+			"domainObj": map[string]interface{}{
+				"@context": "file://" + ctxPath, // transforms to attributes.yaml
+				"@type":    "DomainType",
+				// missing requiredField
+			},
+		},
+	}
+	payloadJSON, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	// Validation should fail with schema errors that have LayerDomain
+	err = validator.Validate(ctx, nil, payloadJSON)
+	assert.Error(t, err)
+	svErr, ok := err.(*model.SchemaValidationErr)
+	assert.True(t, ok, "expected SchemaValidationErr, got %T", err)
+	assert.NotEmpty(t, svErr.Errors)
+
+	// Verify at least one error has LayerDomain
+	hasDomainLayer := false
+	for _, e := range svErr.Errors {
+		if e.Layer == model.LayerDomain {
+			hasDomainLayer = true
+			break
+		}
+	}
+	assert.True(t, hasDomainLayer, "expected at least one error with LayerDomain, got %v", svErr.Errors)
 }

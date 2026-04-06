@@ -6,11 +6,20 @@ import (
 	"strings"
 )
 
+// Layer indicates the validation source of an error.
+type Layer string
+
+const (
+	LayerTransport Layer = "transport"
+	LayerDomain    Layer = "domain"
+)
+
 // Error represents a standard error response.
 type Error struct {
 	Code    string `json:"code"`
 	Paths   string `json:"paths,omitempty"`
 	Message string `json:"message"`
+	Layer   Layer  `json:"layer,omitempty"`
 }
 
 // This implements the error interface for the Error struct.

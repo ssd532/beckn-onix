@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/beckn-one/beckn-onix/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -360,6 +361,36 @@ paths:
 	if err != nil {
 		t.Fatalf("Validation failed for deep allOf action extraction: %v", err)
 	}
+}
+
+func TestValidate_TransportLayer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(testSpec))
+	}))
+	defer server.Close()
+
+	validator, _, err := New(context.Background(), &Config{Type: "url", Location: server.URL, CacheTTL: 3600})
+	if err != nil {
+		t.Fatalf("Failed to create validator: %v", err)
+	}
+
+	// Payload missing required 'order' for the 'select' action (defined in testSpec)
+	payload := `{"context":{"action":"select"},"message":{}}`
+	err = validator.Validate(context.Background(), nil, []byte(payload))
+	assert.Error(t, err, "validation should fail")
+	svErr, ok := err.(*model.SchemaValidationErr)
+	assert.True(t, ok, "expected SchemaValidationErr, got %T", err)
+	assert.NotEmpty(t, svErr.Errors, "expected at least one error")
+
+	// At least one error must have LayerTransport
+	hasTransportLayer := false
+	for _, e := range svErr.Errors {
+		if e.Layer == model.LayerTransport {
+			hasTransportLayer = true
+			break
+		}
+	}
+	assert.True(t, hasTransportLayer, "expected at least one error with LayerTransport, got %v", svErr.Errors)
 }
 
 func contains(s, substr string) bool {
