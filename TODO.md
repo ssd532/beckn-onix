@@ -38,16 +38,16 @@ Overall progress: **0/4 issues fixed**
 
 ## Issue 6: isValidSchemaPath erroneously accepts empty paths
 
-**Status**: ⬜ Not started  
+**Status**: ✅ Completed  
 **File**: `pkg/plugin/implementation/schemav2validator/extended_schema.go`  
 **Function**: `isValidSchemaPath()`
 
 ### Tasks
-- [ ] Add test case for empty string to `TestIsValidSchemaPath` in `extended_schema_test.go`
-- [ ] Verify test fails (empty path currently returns true)
-- [ ] Modify `isValidSchemaPath()` to explicitly reject empty/whitespace strings
-- [ ] Verify test passes
-- [ ] Run full test suite to ensure no regressions
+- [x] Add test case for empty string to `TestIsValidSchemaPath` in `extended_schema_test.go`
+- [x] Verify test fails (empty path currently returns true)
+- [x] Modify `isValidSchemaPath()` to explicitly reject empty/whitespace strings
+- [x] Verify test passes
+- [x] Run full test suite to ensure no regressions
 - [ ] Commit with message: "fix: reject empty schema paths in isValidSchemaPath"
 
 ---
