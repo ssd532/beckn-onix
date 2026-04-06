@@ -54,17 +54,17 @@ Overall progress: **0/4 issues fixed**
 
 ## Issue 8: Action extraction may miss deeply nested allOf
 
-**Status**: ⬜ Not started  
+**Status**: ✅ Completed  
 **File**: `pkg/plugin/implementation/schemav2validator/schemav2validator.go`  
 **Functions**: `extractActionFromSchema()`
 
 ### Tasks
-- [ ] Create test spec with deeply nested `allOf` containing context/action
-- [ ] Add test `TestValidate_DeepAllOfActionExtraction()` in `schemav2validator_test.go`
-- [ ] Verify test fails with current implementation (action not found)
-- [ ] Modify `extractActionFromSchema()` to recursively search all `allOf` branches
-- [ ] Verify test passes
-- [ ] Run full test suite to ensure no regressions
+- [x] Create test spec with deeply nested `allOf` containing context/action
+- [x] Add test `TestValidate_DeepAllOfActionExtraction()` in `schemav2validator_test.go`
+- [x] Verify test fails with current implementation (action not found)
+- [x] Modify `extractActionFromSchema()` to recursively search all `allOf` branches
+- [x] Verify test passes
+- [x] Run full test suite to ensure no regressions
 - [ ] Commit with message: "fix: support deeply nested allOf in action extraction"
 
 ---
