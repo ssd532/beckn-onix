@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -39,9 +40,10 @@ type cachedSpec struct {
 
 // Config struct for Schemav2Validator.
 type Config struct {
-	Type     string // "url", "file", or "dir"
-	Location string // URL, file path, or directory path
-	CacheTTL int
+	Type        string // "url", "file", or "dir"
+	Location    string // URL, file path, or directory path
+	CacheTTL    int
+	LoadTimeout int // seconds for loading spec from URL (default 30)
 
 	// Extended Schema configuration
 	EnableExtendedSchema bool
@@ -171,6 +173,18 @@ func (v *schemav2Validator) loadSpec(ctx context.Context) error {
 		if parseErr != nil {
 			return fmt.Errorf("failed to parse URL: %v", parseErr)
 		}
+		// Apply timeout for URL fetch
+		timeout := v.config.LoadTimeout
+		if timeout <= 0 {
+			timeout = 30 // default 30 seconds
+		}
+		// Configure custom ReadFromURIFunc with HTTP timeout while preserving file support and caching
+		loader.ReadFromURIFunc = openapi3.URIMapCache(
+			openapi3.ReadFromURIs(
+				openapi3.ReadFromHTTP(&http.Client{Timeout: time.Duration(timeout) * time.Second}),
+				openapi3.ReadFromFile,
+			),
+		)
 		doc, err = loader.LoadFromURI(u)
 	case "file":
 		doc, err = loader.LoadFromFile(v.config.Location)

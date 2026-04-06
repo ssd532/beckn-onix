@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const testSpec = `openapi: 3.1.0
@@ -213,6 +216,34 @@ func TestLoadSpec_LocalFile(t *testing.T) {
 	if validator.spec == nil || validator.spec.doc == nil {
 		t.Error("Spec not loaded from local file")
 	}
+}
+
+func TestLoadSpec_URLTimeout(t *testing.T) {
+	// Create a slow server that sleeps longer than the timeout
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		w.Write([]byte(testSpec))
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Type:        "url",
+		Location:    server.URL,
+		CacheTTL:    3600,
+		LoadTimeout: 1, // 1 second
+	}
+
+	v := &schemav2Validator{config: config}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	err := v.loadSpec(ctx)
+	elapsed := time.Since(start)
+
+	assert.Error(t, err)
+	// Should timeout before the 5 second sleep
+	assert.Less(t, elapsed.Seconds(), 2.0, "should have timed out quickly")
 }
 
 func TestCacheTTL_DefaultValue(t *testing.T) {
